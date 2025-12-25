@@ -22,6 +22,7 @@ import static com.android.internal.telephony.cat.CatCmdMessage.SetupEventListCon
 import static com.android.internal.telephony.cat.CatCmdMessage.SetupEventListConstants.LANGUAGE_SELECTION_EVENT;
 import static com.android.internal.telephony.cat.CatCmdMessage.SetupEventListConstants.USER_ACTIVITY_EVENT;
 
+import android.app.KeyguardManager;
 import android.compat.annotation.UnsupportedAppUsage;
 import android.content.Context;
 import android.content.res.Resources.NotFoundException;
@@ -89,6 +90,8 @@ public class CommandParamsFactory extends Handler {
 
     private static final int MAX_GSM7_DEFAULT_CHARS = 239;
     private static final int MAX_UCS2_CHARS = 118;
+    
+    private Context mContext;
 
     // To Report Anomaly
     public static final UUID NPE_WHEN_CALLED_SEND_CMD_PARAMS_UUID =
@@ -115,6 +118,7 @@ public class CommandParamsFactory extends Handler {
     }
 
     private CommandParamsFactory(RilMessageDecoder caller, IccFileHandler fh, Context context) {
+    	mContext = context;
         mCaller = caller;
         mIconLoader = IconLoader.getInstance(this, fh);
         try {
@@ -888,6 +892,13 @@ public class CommandParamsFactory extends Handler {
      */
     private boolean processLaunchBrowser(CommandDetails cmdDet,
             List<ComprehensionTlv> ctlvs) throws ResultException {
+
+        KeyguardManager keyguardManager = mContext.getSystemService(KeyguardManager.class);
+        if (keyguardManager != null && keyguardManager.isDeviceLocked()) {
+            CatLog.d(this, "The device is locked, cannot launch the Browser");
+            throw new ResultException(ResultCode.LAUNCH_BROWSER_ERROR,
+                    "The device is locked, unable to process the command.");
+        }
 
         CatLog.d(this, "process LaunchBrowser");
 
